@@ -64,7 +64,27 @@ class QuestionManager(models.Manager):
 
         level = instance.level
 
+        quiz1 = Quiz.objects.get(id=quiz_id)
+
         if instance.answer == answer:
+
+            if level == 1:
+                quiz1.score += 11
+                quiz1.save()
+            elif level == 2:
+                quiz1.score += 13
+                quiz1.save()
+            elif level == 3:
+                quiz1.score += 15
+                quiz1.save()
+            elif level == 4:
+                quiz1.score += 17
+                quiz1.save()
+            elif level == 5:
+                quiz1.score += 19
+                quiz1.save()
+
+
             if (level != 5):
                 level += 1
         
@@ -72,7 +92,6 @@ class QuestionManager(models.Manager):
             if (level != 1):
                 level -= 1
 
-        quiz1 = Quiz.objects.get(id=quiz_id)
 
         if instance.subject.subject_name == "Physics":
 
