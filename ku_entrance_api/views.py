@@ -5,61 +5,76 @@ from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
+import random
 
 from . import serializers
 from . import models
 from . import permissions
 
-# Create your views here.
-
-class UserProfileView(viewsets.ModelViewSet):
-
-    serializer_class = serializers.UserProfileSerializer
-    queryset = models.UserProfile.objects.all()
-    
-    permission_classes = [IsAdminUser,]
-
-    authentication_classes = [TokenAuthentication, ]
+def _generate_code():
+    combination = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
+    return "".join([random.choice(combination) for i in range(40)])
 
 
-class SubjectView(viewsets.ModelViewSet):
-
-    serializer_class = serializers.SubjectSerializer
-    queryset = models.QstnSubject.objects.all()
-
-    authentication_classes = [TokenAuthentication,]
-    permission_classes = [IsAuthenticated,]
-    
-    allowed_methods = ['GET', 'POST',]
-
-    def create(self, request):
-        if request.user.is_superuser:
-
-            serializer = serializers.SubjectSerializer(data=request.data)
-
-            if serializer.is_valid():
-                subject = models.QstnSubject(
-                    subject_name = serializer.data.get('subject_name'),
-                    totQuestions = serializer.data.get('totQuestions')
-                )
-                subject.save()
-
-                return Response({
-                    "subject_name": serializer.data.get('subject_name'),
-                    "totQuestions": serializer.data.get('totQuestions')
-                })
-
-        else:
-            return Response({"Need to be admin to perform this task"})
-
-
+# Create your views here
 
 class QuestionView(viewsets.ModelViewSet):
 
     serializer_class = serializers.QuestionSerializer
     queryset = models.Questions.objects.all()
+
+
+
+class PaymentVerify(APIView):
+
+    permission_classes = [IsAuthenticated,]
+
+    def post(self, request, *args, **kwargs):
+
+        user = request.user
+        code = _generate_code()
+
+        payment = models.PayVerificationCode(user=user, code=code)
+        payment.save()
+
+        return Response({
+            'status': True,
+            'data': 'Payment Successful'
+        })
+
+
+
+class StartQuiz(APIView):
+
+    permission_classes = [IsAuthenticated,]
+
+    def post(self, request, *args, **kwargs):
+
+        user = request.user
+        code = request.POST['code']
+
+        pay_code = models.PayVerificationCode.objects.get(user=user.username)
+
+        if code == pay_code.code:
+
+            quiz = models.Quiz(user=user, quiz_name=f'{user.username}_quiz', activation_code=pay_code)
+            quiz.save()
+
+            pay_code.is_active = True
+            pay_code.save()
+
+            return Response({
+                'status': True,
+                'data': 'Quiz created successfully'
+            })
+
+        else:
+            return Response({
+                'status': False,
+                'data': 'Payment Verification Failed'
+            })
 
 
 
@@ -115,7 +130,3 @@ class FetchNextQuestion(APIView):
                 'data': 'You have completed this subject'
             })
 
-
-
-
-    

@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
+    'account',
     'ku_entrance_api',
 ]
 
@@ -122,4 +123,4 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-AUTH_USER_MODEL = 'ku_entrance_api.UserProfile'
+AUTH_USER_MODEL = 'account.UserProfile'

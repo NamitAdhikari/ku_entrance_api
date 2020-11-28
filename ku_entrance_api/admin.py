@@ -5,6 +5,5 @@ from .models import *
 # Register your models here.
 
 admin.site.register(QstnSubject)
-admin.site.register(UserProfile)
 admin.site.register(Questions)
 admin.site.register(Quiz)

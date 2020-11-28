@@ -19,4 +19,5 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('ku_entrance_api.urls')),
+    path('account/', include('account.urls'))
 ]
