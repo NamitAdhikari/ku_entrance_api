@@ -21,13 +21,16 @@ class QstnSubject(models.Model):
     def __str__(self):
         return self.subject_name
 
+    class Meta:
+        verbose_name_plural = 'Subjects'
+
 
 
 class QuestionManager(models.Manager):
 
-    def fetch_next(self, obj, answer, quiz_id):
+    def fetch_next(self, question_id, answer, quiz_id):
 
-        instance = Questions.objects.get(pk=obj)
+        instance = Questions.objects.get(pk=question_id)
 
         level = instance.level
 

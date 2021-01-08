@@ -8,6 +8,7 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
 import random
+import json
 
 from . import serializers
 from . import models
@@ -20,20 +21,13 @@ def _generate_code():
 
 # Create your views here
 
-class QuestionView(viewsets.ModelViewSet):
-
-    serializer_class = serializers.QuestionSerializer
-    queryset = models.Questions.objects.all()
-
-
-
 class PaymentVerify(APIView):
 
     permission_classes = [IsAuthenticated,]
 
     def post(self, request, *args, **kwargs):
 
-        user = request.user
+        user = request.user.username
         code = _generate_code()
 
         payment = models.PayVerificationCode(user=user, code=code)
@@ -59,16 +53,25 @@ class StartQuiz(APIView):
 
         if code == pay_code.code:
 
-            quiz = models.Quiz(user=user, quiz_name=f'{user.username}_quiz', activation_code=pay_code)
-            quiz.save()
+            getquiz = models.Quiz.objects.get(user=user)
 
-            pay_code.is_active = True
-            pay_code.save()
+            if getquiz is None:
 
-            return Response({
-                'status': True,
-                'data': 'Quiz created successfully'
-            })
+                quiz = models.Quiz(user=user, quiz_name=f'{user.username}_quiz', activation_code=pay_code)
+                quiz.save()
+
+                pay_code.is_active = True
+                pay_code.save()
+
+                return Response({
+                    'status': True,
+                    'data': 'Quiz created successfully'
+                })
+            else:
+                return Response({
+                    'status': 'False',
+                    'data': 'You already have an existing quiz'
+                })
 
         else:
             return Response({
@@ -76,6 +79,41 @@ class StartQuiz(APIView):
                 'data': 'Payment Verification Failed'
             })
 
+
+class Subject(APIView):
+
+    permission_classes = [IsAuthenticated,]   
+
+    def get(self, request, format=None):
+
+        subjects = models.QstnSubject.objects.all()
+
+        serialized_data = serializers.SubjectSerializer(subjects, many=True)
+        print(serialized_data)
+
+        return Response({
+            'status': True,
+            'data': serialized_data.data
+        })
+    
+    def post(self, request, *args, **kwargs):
+
+        # change subject
+
+        user = request.user
+        subject_id = request.POST['subjectID']
+        quiz_id = request.POST['quizID']
+
+        quiz = models.Quiz.objects.get(id=quiz_id)
+
+        questions = models.Questions.objects.filter(subject=subject_id).order_by('?').first()
+
+        serializer_data = serializers.QuestionSerializer(questions)
+
+        return Response({
+            'status': True,
+            'data': serializer_data.data
+        })
 
 
 class FetchNextQuestion(APIView):
@@ -85,11 +123,8 @@ class FetchNextQuestion(APIView):
 
     def post(self, request, *args, **kwargs):
 
-        print(request.data)
-
         quiz_id = request.POST['quizID']
         answer = request.POST['answer']
-
         question_id = request.POST['questionID']
 
         quiz = models.Quiz.objects.get(id=quiz_id)
